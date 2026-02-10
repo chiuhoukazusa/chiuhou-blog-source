@@ -8,7 +8,7 @@ tags:
   - Perlin Noise
 categories:
   - 每日编程实践
-cover: https://raw.githubusercontent.com/chiuhoukazusa/daily-coding-practice/main/2026-02-10-perlin-noise/output_clouds.png
+cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/perlin-noise-2026-02-10/output_marble.png
 ---
 
 今天实现了经典的 Perlin Noise 算法，用于生成自然的程序化纹理。这是图形学中非常重要的技术，可以生成云层、大理石、木纹等多种自然纹理。
@@ -65,13 +65,13 @@ double octaveNoise(double x, double y, int octaves, double persistence) {
 ## 生成效果
 
 ### 云层纹理
-![云层纹理](https://raw.githubusercontent.com/chiuhoukazusa/daily-coding-practice/main/2026-02-10-perlin-noise/output_clouds.png)
+![云层纹理](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/perlin-noise-2026-02-10/output_clouds.png)
 
 ### 大理石纹理
-![大理石纹理](https://raw.githubusercontent.com/chiuhoukazusa/daily-coding-practice/main/2026-02-10-perlin-noise/output_marble.png)
+![大理石纹理](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/perlin-noise-2026-02-10/output_marble.png)
 
 ### 木纹纹理
-![木纹纹理](https://raw.githubusercontent.com/chiuhoukazusa/daily-coding-practice/main/2026-02-10-perlin-noise/output_wood.png)
+![木纹纹理](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/perlin-noise-2026-02-10/output_wood.png)
 
 ## 核心代码
 
