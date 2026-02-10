@@ -8,8 +8,7 @@ tags:
   - Perlin Noise
 categories:
   - 每日编程实践
-index_img: https://raw.githubusercontent.com/chiuhoukazusa/daily-coding-practice/main/2026-02-10-perlin-noise/output_clouds.png
-banner_img: https://raw.githubusercontent.com/chiuhoukazusa/daily-coding-practice/main/2026-02-10-perlin-noise/output_marble.png
+cover: https://raw.githubusercontent.com/chiuhoukazusa/daily-coding-practice/main/2026-02-10-perlin-noise/output_clouds.png
 ---
 
 今天实现了经典的 Perlin Noise 算法，用于生成自然的程序化纹理。这是图形学中非常重要的技术，可以生成云层、大理石、木纹等多种自然纹理。
