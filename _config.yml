@@ -13,7 +13,7 @@ timezone: 'Asia/Shanghai'
 
 # URL
 url: https://chiuhoukazusa.github.io
-root: /
+root: /chiuhou-tech-blog/
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 pretty_urls:
