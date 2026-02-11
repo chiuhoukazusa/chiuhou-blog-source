@@ -8,7 +8,7 @@ description: 实现经典的 Perlin 噪声算法，用于生成自然的程序�
 
 # 每日编程实践：Perlin 噪声程序化纹理生成
 
-## 项目概述
+## 🎯 项目概述
 
 在本项目中，我实现了一个经典的 Perlin 噪声生成器，用于创建自然的程序化纹理。Perlin 噪声由 Ken Perlin 于 1985 年发明，广泛应用于计算机图形学中的地形生成、云层模拟、水波效果等领域。
 
@@ -70,21 +70,21 @@ double octaveNoise(double x, double y, int octaves, double persistence) {
 - **效果**: 模拟自然云层的柔和渐变
 - **颜色映射**: 白色到灰蓝色的平滑过渡
 
-![云层纹理](blog_img/perlin_clouds.png)
+![云层纹理](/images/perlin_clouds.png)
 
 ### 2. 大理石纹理
 - **参数**: 4 层 Octave Noise，持久度 0.6
 - **特殊处理**: 使用正弦波扰动噪声值
 - **效果**: 模拟大理石的自然纹理
 
-![大理石纹理](blog_img/perlin_marble.png)
+![大理石纹理](/images/perlin_marble.png)
 
 ### 3. 木纹纹理
 - **参数**: 3 层 Octave Noise，持久度 0.5
 - **特殊处理**: 径向距离 + 环状图案
 - **效果**: 模拟木材的年轮和纹理
 
-![木纹纹理](blog_img/perlin_wood.png)
+![木纹纹理](/images/perlin_wood.png)
 
 ## 技术实现细节
 
@@ -146,6 +146,203 @@ public:
 4. **GPU 实现**
    - 使用 OpenGL/Compute Shader
    - 实时生成和编辑
+
+## 🔧 完整的代码实现
+
+### PerlinNoise 类定义
+```cpp
+// Perlin Noise 生成器完整实现
+class PerlinNoise {
+private:
+    std::vector<int> permutation;
+    
+    double fade(double t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+    
+    double lerp(double t, double a, double b) {
+        return a + t * (b - a);
+    }
+    
+    double grad(int hash, double x, double y) {
+        int h = hash & 15;
+        double u = h < 8 ? x : y;
+        double v = h < 4 ? y : (h == 12 || h == 14 ? x : 0);
+        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+    }
+    
+public:
+    PerlinNoise(unsigned int seed = 0) {
+        permutation.resize(512);
+        std::vector<int> p(256);
+        for (int i = 0; i < 256; i++) p[i] = i;
+        
+        std::default_random_engine engine(seed);
+        std::shuffle(p.begin(), p.end(), engine);
+        
+        for (int i = 0; i < 256; i++) {
+            permutation[i] = p[i];
+            permutation[256 + i] = p[i];
+        }
+    }
+    
+    double noise(double x, double y) {
+        int X = (int)floor(x) & 255;
+        int Y = (int)floor(y) & 255;
+        x -= floor(x);
+        y -= floor(y);
+        
+        double u = fade(x);
+        double v = fade(y);
+        
+        int A = permutation[X] + Y;
+        int AA = permutation[A];
+        int AB = permutation[A + 1];
+        int B = permutation[X + 1] + Y;
+        int BA = permutation[B];
+        int BB = permutation[B + 1];
+        
+        return lerp(v,
+            lerp(u, grad(permutation[AA], x, y), 
+                 grad(permutation[BA], x - 1, y)),
+            lerp(u, grad(permutation[AB], x, y - 1), 
+                 grad(permutation[BB], x - 1, y - 1))
+        );
+    }
+    
+    double octaveNoise(double x, double y, int octaves, double persistence) {
+        double total = 0, frequency = 1, amplitude = 1, maxValue = 0;
+        for (int i = 0; i < octaves; i++) {
+            total += noise(x * frequency, y * frequency) * amplitude;
+            maxValue += amplitude;
+            amplitude *= persistence;
+            frequency *= 2;
+        }
+        return total / maxValue;
+    }
+};
+```
+
+### 📸 图像生成功能
+
+```cpp
+// 云层纹理生成
+void generateCloudTexture(int width, int height, const std::string& filename) {
+    PerlinNoise perlin(12345);
+    std::vector<unsigned char> image(width * height * 3);
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            double nx = (double)x / width;
+            double ny = (double)y / height;
+            double value = perlin.octaveNoise(nx * 8, ny * 8, 6, 0.5);
+            value = (value + 1.0) / 2.0;
+            
+            unsigned char color = (unsigned char)(value * 255);
+            int idx = (y * width + x) * 3;
+            image[idx] = image[idx + 1] = image[idx + 2] = color;
+        }
+    }
+    
+    saveImage(filename, image, width, height);
+}
+
+// 大理石纹理生成
+void generateMarbleTexture(int width, int height, const std::string& filename) {
+    PerlinNoise perlin(54321);
+    std::vector<unsigned char> image(width * height * 3);
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            double nx = (double)x / width;
+            double ny = (double)y / height;
+            
+            double value = perlin.octaveNoise(nx * 10, ny * 10, 4, 0.6);
+            value = sin((nx * 20 + value * 5) * M_PI);
+            value = (value + 1.0) / 2.0;
+            
+            unsigned char base = 230;
+            unsigned char vein = (unsigned char)(value * 80);
+            unsigned char color = base - vein;
+            
+            int idx = (y * width + x) * 3;
+            image[idx] = color;
+            image[idx + 1] = color - 20;
+            image[idx + 2] = color - 10;
+        }
+    }
+    
+    saveImage(filename, image, width, height);
+}
+
+// 木纹纹理生成
+void generateWoodTexture(int width, int height, const std::string& filename) {
+    PerlinNoise perlin(99999);
+    std::vector<unsigned char> image(width * height * 3);
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            double nx = (double)x / width - 0.5;
+            double ny = (double)y / height - 0.5;
+            
+            double dist = sqrt(nx * nx + ny * ny);
+            double noise = perlin.octaveNoise(nx * 5, ny * 5, 3, 0.5);
+            double value = sin((dist + noise * 0.3) * 40) * 0.5 + 0.5;
+            
+            // 木纹颜色 - 棕色系
+            unsigned char r = (unsigned char)(180 * value + 75);
+            unsigned char g = (unsigned char)(150 * value + 60);
+            unsigned char b = (unsigned char)(120 * value + 45);
+            
+            int idx = (y * width + x) * 3;
+            image[idx] = r;
+            image[idx + 1] = g;
+            image[idx + 2] = b;
+        }
+    }
+    
+    saveImage(filename, image, width, height);
+}
+```
+
+## 🧪 数学原理解析
+
+### 1️⃣ 网格梯度系统
+Perlin 噪声的核心思想是在每个整数网格点定义随机梯度向量，然后在网格内进行平滑插值。
+
+**梯度计算公式**:
+- 使用哈希表选择 8 个基础方向
+- 双线性插值保证平滑过渡
+
+### 2️⃣ Fade 函数的数学推导
+经典的 Perlin fade 函数确保了 C² 连续性：
+```math
+f(t) = 6t⁵ - 15t⁴ + 10t³
+```
+
+这个函数满足:
+- f(0) = 0, f(1) = 1
+- f'(0) = f'(1) = 0
+- f''(0) = f''(1) = 0
+
+这些条件保证了噪声值在网格边界处平滑。
+
+### 3️⃣ Octave Noise 的频率分布
+多层噪声叠加使用指数衰减的频率倍数和振幅：
+
+```math
+\text{频域} = \{1, 2, 4, 8, 16, ...\}
+\text{振幅} = \{1, p, p², p³, p⁴, ...\}
+```
+
+其中 p 是持久度参数，控制低频/高频的平衡。
+
+## 📊 性能优化技巧
+
+1. **查表优化**: 将 fade() 函数预计算到查找表中
+2. **SIMD 并行**: 使用 AVX/SSE 指令集并行计算多个点的噪声
+3. **空间局部性**: 按小块区域计算，利用 CPU 缓存
+4. **多线程**: 为图像的每个部分分配独立线程
 
 ## 学习收获
 
