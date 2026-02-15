@@ -1,7 +1,7 @@
 ---
 title: Bresenham直线绘制算法实践 - 图形学每日挑战
 date: 2026-02-14 10:00:00
-categories: [图形学, C++编程, 每日挑战]
+categories: [每日编程实践]
 tags: [图形学, 算法, Bresenham, C++, 像素绘制]
 cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/bresenham-2026-02-14/bresenham_output.png
 ---

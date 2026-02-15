@@ -1,12 +1,8 @@
 ---
 title: 每日编程实践：简单的光线追踪器渲染球体
 date: 2026-02-13 10:00:00
-tags:
-  - C++
-  - 图形学
-  - 光线追踪
-categories:
-  - 每日编程实践
+categories: [每日编程实践]
+tags: [C++, 图形学, 光线追踪]
 cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/ray-tracer-2026-02-13/output.png
 ---
 

@@ -1,14 +1,8 @@
 ---
 title: 每日编程实践：Perlin 噪声程序化纹理生成
 date: 2026-02-10 10:00:00
-tags:
-  - 图形学
-  - 算法
-  - C++
-  - 程序化生成
-  - 每日编程
-categories:
-  - 每日编程实践
+categories: [每日编程实践]
+tags: [图形学, 算法, C++, 程序化生成, 每日编程]
 cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/perlin_clouds.png
 description: 实现经典的 Perlin 噪声算法，用于生成自然的程序化纹理。包括云层、大理石、木纹等多种效果，支持多层噪声叠加（Octave Noise）。
 ---

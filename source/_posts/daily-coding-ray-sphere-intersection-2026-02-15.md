@@ -1,9 +1,10 @@
 ---
 title: 光线追踪：球体相交检测实现 - 图形学每日挑战
 date: 2026-02-15 10:00:00
-categories: [图形学, C++编程, 每日挑战]
+categories: [每日编程实践]
 tags: [图形学, 算法, 光线追踪, 球体, 光线求交, 计算机图形学]
 cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026-02-15-ray-sphere/ray_sphere_intersection.png
+mathjax: true
 ---
 
 ## 每日编程挑战：光线与球体相交检测可视化
@@ -23,33 +24,33 @@ cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026-02-15-
 #### 数学公式推导
 
 设：
-- 光线：$R(t) = O + t\vec{d}$（$O$为原点，$\vec{d}$为方向，$t$为参数）
-- 球体：中心$C$，半径$r$，满足 $||P - C||^2 = r^2$
+- 光线：**R(t) = O + t·d**（O为原点，d为方向向量，t为参数）
+- 球体：中心C，半径r，满足 **||P - C||² = r²**
 
 将光线方程代入球体方程：
-$$ ||O + t\vec{d} - C||^2 = r^2 $$
+**||O + t·d - C||² = r²**
 
 展开得：
-$$ (O - C + t\vec{d}) \cdot (O - C + t\vec{d}) = r^2 $$
+**(O - C + t·d) · (O - C + t·d) = r²**
 
-令 $OC = O - C$，则：
-$$ (OC + t\vec{d}) \cdot (OC + t\vec{d}) = r^2 $$
-$$ OC \cdot OC + 2t(OC \cdot \vec{d}) + t^2(\vec{d} \cdot \vec{d}) = r^2 $$
+令 **OC = O - C**，则：
+**(OC + t·d) · (OC + t·d) = r²**
+**OC·OC + 2t(OC·d) + t²(d·d) = r²**
 
 整理得到一元二次方程：
-$$ at^2 + bt + c = 0 $$
+**a·t² + b·t + c = 0**
 
 其中：
-- $a = \vec{d} \cdot \vec{d}$
-- $b = 2(OC \cdot \vec{d})$
-- $c = OC \cdot OC - r^2$
+- **a = d·d**（方向向量的点积）
+- **b = 2(OC·d)**（OC与方向向量的点积的两倍）
+- **c = OC·OC - r²**（OC的点积减去半径平方）
 
 #### 交点判定
 
-通过判别式 $Δ = b^2 - 4ac$ 判断相交情况：
-- $Δ < 0$：无交点
-- $Δ = 0$：相切（一个交点）
-- $Δ > 0$：相交（两个交点）
+通过判别式 **Δ = b² - 4ac** 判断相交情况：
+- **Δ < 0**：无交点
+- **Δ = 0**：相切（一个交点）
+- **Δ > 0**：相交（两个交点）
 
 ### 代码实现
 

@@ -1,13 +1,8 @@
 ---
 title: Voronoi 图生成器 - 计算几何的暴力之美
 date: 2026-02-11 10:00:00
-tags:
-  - C++
-  - 图形学
-  - 计算几何
-  - Voronoi Diagram
-categories:
-  - 每日编程实践
+categories: [每日编程实践]
+tags: [C++, 图形学, 计算几何, Voronoi Diagram]
 cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/voronoi-2026-02-11/voronoi.png
 ---
 
