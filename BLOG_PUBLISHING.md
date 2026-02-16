@@ -1,360 +1,275 @@
-# Hexo Blog Publishing Skill
+# Hexo Blog Publishing Skill - 强制性流程文档
 
-**使用场景**：自动发布技术博客文章到 Hexo 博客系统。
+**⚠️ 严重警告**：README.md ≠ 博客发布！必须执行完整的7步流程！
 
-## 博客架构
+## ❌ 常见错误（严禁）
 
-### 仓库信息
-- **源码仓库**：https://github.com/chiuhoukazusa/chiuhou-blog-source
-- **部署仓库**：https://github.com/chiuhoukazusa/chiuhou-tech-blog
-- **博客地址**：https://chiuhoukazusa.github.io/chiuhou-tech-blog/
+### 错误1：混淆概念
+```
+✗ 错误：写README.md = 发布博客
+✓ 正确：README.md是项目文档，博客需要单独发布到Hexo网站
+```
 
-### 本地环境
-- **工作目录**：`/root/.openclaw/workspace/chiuhou-blog-new/`
-- **主题**：Butterfly 5.5.4
-- **文章目录**：`source/_posts/`
+### 错误2：跳过流程
+```
+✗ 错误：只创建文章文件就认为完成
+✓ 正确：必须执行hexo deploy才能发布到网站
+```
 
-## 发布文章流程
+### 错误3：缺少验证
+```
+✗ 错误：没有访问博客网站确认文章存在
+✓ 正确：打开博客URL验证文章已发布
+```
 
-### 1. 创建新文章
+## ✅ 强制性7步流程（缺一不可）
 
+### 📋 发布前检查清单
+在开始发布前，必须确认：
+- [ ] 项目日期正确（匹配当天日期）
+- [ ] 项目代码存在且可编译
+- [ ] 项目有输出图片
+- [ ] 图片文件完整无损
+
+### 第1步：确认项目信息 ✓
 ```bash
-cd /root/.openclaw/workspace/chiuhou-blog-new
+# 找到今日项目目录
+ls /root/.openclaw/workspace/daily-coding-practice/2026/02/
 
-# 方式 A：使用 hexo 命令创建
-hexo new "文章标题"
+# 查看项目README了解内容
+cat <项目目录>/README.md
 
-# 方式 B：直接创建 Markdown 文件
-cat > source/_posts/article-name.md << 'EOF'
+# 确认输出图片存在
+ls <项目目录>/*.png
+```
+
+**验证点**：项目日期、名称、代码文件、输出图片都存在
+
+### 第2步：准备封面图 ✓
+```bash
+# 创建图床目录
+mkdir -p /root/.openclaw/workspace/blog_img/<项目名>-<日期>/
+
+# 复制封面图
+cp <项目目录>/output.png /root/.openclaw/workspace/blog_img/<项目名>-<日期>/
+```
+
+**验证点**：图片文件成功复制到图床目录
+
+### 第3步：创建博客文章 ✓
+```bash
+# 工作目录（注意：是chiuhou-blog-source不是chiuhou-blog-new）
+cd /root/.openclaw/workspace/chiuhou-blog-source
+
+# 创建文章文件
+vi source/_posts/daily-coding-<项目名>-<日期>.md
+```
+
+**Front-matter模板**（强制格式）：
+```yaml
 ---
-title: 文章标题
+title: <文章标题> - 图形学每日挑战
 date: YYYY-MM-DD HH:MM:SS
-tags:
-  - 标签1
-  - 标签2
-categories:
-  - 分类名
-cover: 封面图URL（可选）
+categories: [每日编程实践]
+tags: [图形学, 算法, <相关标签>]
+cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/<项目名>-<日期>/<图片名>.png
+---
+```
+
+**验证点**：
+- [ ] categories必须是`[每日编程实践]`（方括号格式）
+- [ ] cover链接格式正确
+- [ ] 文章内容基于实际项目README
+
+### 第4步：上传图片到图床 ✓
+```bash
+cd /root/.openclaw/workspace/blog_img
+git add <项目名>-<日期>/
+git commit -m "添加<项目名>封面图"
+git push origin main
+```
+
+**验证点**：GitHub上能看到新上传的图片
+
+### 第5步：生成静态网站 ✓
+```bash
+cd /root/.openclaw/workspace/chiuhou-blog-source
+hexo clean && hexo generate
+```
+
+**验证点**：输出显示"XX files generated"，无错误信息
+
+### 第6步：部署到GitHub Pages ✓
+```bash
+cd /root/.openclaw/workspace/chiuhou-blog-source
+hexo deploy
+```
+
+**验证点**：
+- 输出显示"Deploy done: git"
+- Git commit成功推送到chiuhou-tech-blog仓库
+
+### 第7步：推送博客源码 ✓
+```bash
+cd /root/.openclaw/workspace/chiuhou-blog-source
+git add source/_posts/*.md
+git commit -m "新增博客文章：<文章标题>"
+git push origin main
+```
+
+**验证点**：GitHub上chiuhou-blog-source仓库有新的commit
+
 ---
 
-文章内容...
-EOF
+## 🔍 发布后验证（强制）
+
+### 验证步骤
+1. **等待30秒**（GitHub Pages缓存更新）
+2. **访问博客首页**：https://chiuhoukazusa.github.io/chiuhou-tech-blog/
+3. **确认文章出现在首页**
+4. **点击文章标题**，确认内容完整
+5. **检查封面图**是否正确显示
+
+### 验证清单
+- [ ] 首页能看到新文章卡片
+- [ ] 封面图正确显示
+- [ ] 文章标题正确
+- [ ] 文章内容完整
+- [ ] 分类显示为"每日编程实践"
+- [ ] 标签正确
+
+---
+
+## 📚 关键概念区分
+
+### README.md vs 博客文章
+
+| 项目 | README.md | 博客文章 |
+|------|-----------|---------|
+| **位置** | GitHub项目目录 | Hexo博客网站 |
+| **作用** | 项目文档 | 公开博客 |
+| **读者** | GitHub访问者 | 博客访问者 |
+| **格式** | Markdown | Markdown + Front-matter |
+| **发布** | git push | hexo deploy |
+
+**核心区别**：README是项目的说明文档，博客是面向公众的技术文章，两者完全独立！
+
+---
+
+## ⚠️ 紧急提醒（每次发布前必读）
+
+### 失误1：混淆README和博客
+**症状**：认为"README.md已发布"等于"博客已发布"
+**后果**：博客网站上没有文章，用户看不到内容
+**解决**：严格执行7步流程，最后验证博客网站
+
+### 失误2：跳过hexo deploy
+**症状**：只创建了文章文件，没有运行hexo deploy
+**后果**：文章没有部署到GitHub Pages
+**解决**：第6步是强制性的，不能跳过
+
+### 失误3：分类格式错误
+**症状**：使用旧的YAML格式或错误的分类名
+**后果**：文章分类混乱，无法统一管理
+**解决**：统一使用`categories: [每日编程实践]`格式
+
+---
+
+## 🎯 流程自检表（每次发布必填）
+
+```
+发布日期：_______
+项目名称：_______
+
+[ ] 第1步：确认项目信息
+[ ] 第2步：准备封面图
+[ ] 第3步：创建博客文章
+[ ] 第4步：上传图片到图床
+[ ] 第5步：生成静态网站
+[ ] 第6步：部署到GitHub Pages
+[ ] 第7步：推送博客源码
+[ ] 发布后验证：访问博客确认
+
+签名：_______ 完成时间：_______
 ```
 
-### 2. Front-matter 配置说明
+---
 
-**必需字段**：
-```yaml
-title: 文章标题
-date: 2026-02-10 10:00:00
-```
+## 📖 正确工作目录
 
-**推荐字段**：
-```yaml
-tags:
-  - C++
-  - 图形学
-categories:
-  - 每日编程实践
-cover: https://example.com/cover.png  # 文章封面图（首页卡片显示）
-```
+**⚠️ 注意路径变更**
 
-**Butterfly 主题特有**：
-- `cover`: 文章封面图（显示在首页卡片上）
-- `description`: 文章摘要（可选，默认自动提取）
-- `top`: 是否置顶（true/false）
+| 用途 | 正确路径 |
+|------|---------|
+| 博客源码 | `/root/.openclaw/workspace/chiuhou-blog-source` |
+| 图床仓库 | `/root/.openclaw/workspace/blog_img` |
+| 项目代码 | `/root/.openclaw/workspace/daily-coding-practice` 或 `/root/.openclaw/workspace/github-daily-coding-practice` |
 
-### 3. 生成和部署
+**错误路径**（已废弃）：
+- ~~`/root/.openclaw/workspace/chiuhou-blog-new`~~（不存在）
 
+---
+
+## 🔧 故障排查
+
+### 问题1：hexo命令找不到
 ```bash
-cd /root/.openclaw/workspace/chiuhou-blog-new
+# 检查hexo是否安装
+cd /root/.openclaw/workspace/chiuhou-blog-source
+npm list hexo
 
-# 一键发布（推荐）
-hexo clean && hexo generate && hexo deploy
-
-# 简写
-hexo c && hexo g && hexo d
+# 重新安装（如需要）
+npm install
 ```
 
-**自动完成的操作**：
-1. 清理旧文件
-2. 生成静态 HTML
-3. 推送到源码仓库（手动 git push）
-4. 推送到部署仓库（hexo deploy 自动）
-5. GitHub Pages 自动更新
-
-### 4. 推送源码（重要！）
-
+### 问题2：部署失败
 ```bash
-cd /root/.openclaw/workspace/chiuhou-blog-new
+# 检查Git配置
+git config --list | grep user
 
-git add .
-git commit -m "新增博客文章: 文章标题"
-git push origin main
+# 检查远程仓库
+git remote -v
 ```
 
-**注意**：`hexo deploy` 只推送生成的 HTML，不会推送源码。源码需要手动 push！
-
-## 图片处理
-
-### 推荐方式：使用 GitHub 作为图床
-
-```markdown
-![图片说明](https://raw.githubusercontent.com/username/repo/branch/path/image.png)
-```
-
-### 本地图片
-
-1. 放在 `source/images/` 目录
-2. 引用：`![图片](/images/image.png)`
-
-## 常用命令
-
+### 问题3：图片不显示
 ```bash
-# 创建新文章
-hexo new "标题"
+# 检查图片URL格式
+# 正确：https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/<path>/<file>.png
+# 错误：相对路径或错误域名
 
-# 创建草稿
-hexo new draft "标题"
-
-# 发布草稿
-hexo publish "标题"
-
-# 清理
-hexo clean
-
-# 生成
-hexo generate  # 或 hexo g
-
-# 本地预览
-hexo server    # 或 hexo s
-# 访问 http://localhost:4000
-
-# 部署
-hexo deploy    # 或 hexo d
-
-# 一键发布
-hexo clean && hexo g && hexo d
+# 手动验证图片URL
+curl -I <图片URL>
 ```
 
-## 自动化集成（用于 daily-coding-practice）
+---
 
-### 发布函数示例
+## 💡 最佳实践
 
-```python
-import os
-import subprocess
-from datetime import datetime
+1. **先项目后博客**：项目完成并验证后再写博客
+2. **内容一致性**：博客内容必须100%基于实际项目
+3. **命名规范**：使用统一的文件命名格式
+4. **立即验证**：发布后立即访问博客确认
+5. **定期备份**：定期推送所有仓库
 
-def publish_to_hexo_blog(title, content, tags, category, cover_image_url=None):
-    """
-    发布文章到 Hexo 博客
-    
-    Args:
-        title: 文章标题
-        content: Markdown 内容
-        tags: 标签列表 ['tag1', 'tag2']
-        category: 分类名称
-        cover_image_url: 封面图 URL（可选）
-    """
-    blog_dir = "/root/.openclaw/workspace/chiuhou-blog-new"
-    
-    # 生成文件名（使用拼音或英文）
-    filename = title.lower().replace(' ', '-')
-    filename = re.sub(r'[^\w\-]', '', filename)
-    
-    # 创建 Front-matter
-    front_matter = f"""---
-title: {title}
-date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-tags:
-{chr(10).join(f'  - {tag}' for tag in tags)}
-categories:
-  - {category}
-"""
-    
-    if cover_image_url:
-        front_matter += f"cover: {cover_image_url}\n"
-    
-    front_matter += "---\n\n"
-    
-    # 写入文件
-    post_path = f"{blog_dir}/source/_posts/{filename}.md"
-    with open(post_path, 'w', encoding='utf-8') as f:
-        f.write(front_matter + content)
-    
-    # 生成并部署
-    os.chdir(blog_dir)
-    
-    # 生成静态文件
-    subprocess.run(["hexo", "clean"], check=True)
-    subprocess.run(["hexo", "generate"], check=True)
-    
-    # 部署到 GitHub Pages
-    subprocess.run(["hexo", "deploy"], check=True)
-    
-    # 推送源码
-    subprocess.run(["git", "add", "."], check=True)
-    subprocess.run(["git", "commit", "-m", f"新增博客文章: {title}"], check=True)
-    subprocess.run(["git", "push", "origin", "main"], check=True)
-    
-    print(f"✅ 博客发布成功: {title}")
-    print(f"🌐 访问地址: https://chiuhoukazusa.github.io/chiuhou-tech-blog/")
-```
+---
 
-### Shell 脚本版本
+## 🎓 记忆口诀
 
-```bash
-#!/bin/bash
-# publish-blog.sh
+**"7步发布法，缺一不可"**
 
-BLOG_DIR="/root/.openclaw/workspace/chiuhou-blog-new"
-TITLE="$1"
-FILENAME="$2"
+1. 确认项目（日期名称代码图）
+2. 准备封面（复制到图床目录）
+3. 创建文章（Front-matter+内容）
+4. 上传图片（push到blog_img）
+5. 生成网站（hexo clean generate）
+6. 部署上线（hexo deploy重点）
+7. 推送源码（git push源仓库）
 
-cd "$BLOG_DIR"
+**最后一步**：打开博客，眼见为实！
 
-# 创建文章
-hexo new "$TITLE"
+---
 
-# 等待用户编辑...
-echo "请编辑文章: source/_posts/$FILENAME.md"
-read -p "编辑完成后按回车继续..."
-
-# 生成并部署
-hexo clean && hexo generate && hexo deploy
-
-# 推送源码
-git add .
-git commit -m "新增博客文章: $TITLE"
-git push origin main
-
-echo "✅ 发布完成！"
-```
-
-## 故障排查
-
-### 问题 1：hexo deploy 失败
-
-**原因**：未安装部署插件
-
-**解决**：
-```bash
-npm install hexo-deployer-git --save
-```
-
-### 问题 2：Git 推送需要密码
-
-**原因**：未配置 Git credentials
-
-**解决**：
-```bash
-# 方式 A：使用 Git credential store
-git config --global credential.helper store
-
-# 方式 B：配置 ~/.git-credentials
-echo "https://username:token@github.com" > ~/.git-credentials
-chmod 600 ~/.git-credentials
-```
-
-### 问题 3：主题显示异常
-
-**原因**：主题未正确安装
-
-**解决**：
-```bash
-npm install hexo-theme-butterfly --save
-cp -r node_modules/hexo-theme-butterfly themes/butterfly
-```
-
-### 问题 4：GitHub 阻止推送（包含 token）
-
-**原因**：_config.yml 中包含 GitHub token
-
-**解决**：
-```yaml
-# 错误：
-deploy:
-  repo: https://user:TOKEN@github.com/...
-
-# 正确：
-deploy:
-  repo: https://github.com/user/repo.git
-```
-
-使用 Git credentials 而不是在 URL 中包含 token。
-
-## 配置文件参考
-
-### _config.yml 关键配置
-
-```yaml
-# 网站信息
-title: Chiuhou 技术博客
-subtitle: '代码人生，持续学习'
-description: '记录编程学习和项目实践'
-author: Chiuhou
-language: zh-CN
-timezone: 'Asia/Shanghai'
-
-# URL
-url: https://chiuhoukazusa.github.io/chiuhou-tech-blog
-root: /chiuhou-tech-blog/
-
-# 主题
-theme: butterfly
-
-# 部署
-deploy:
-  type: git
-  repo: https://github.com/chiuhoukazusa/chiuhou-tech-blog.git
-  branch: main
-```
-
-### Butterfly 主题配置（可选）
-
-主题配置文件：`themes/butterfly/_config.yml`
-
-**常用配置**：
-- 头像、背景图
-- 社交链接
-- 评论系统
-- 搜索功能
-- 代码高亮主题
-
-参考官方文档：https://butterfly.js.org/
-
-## 最佳实践
-
-1. **文章命名**：使用英文或拼音，避免中文文件名
-2. **图片管理**：使用外部图床（GitHub、CDN）
-3. **定期备份**：源码推送到 GitHub
-4. **提交信息**：清晰描述修改内容
-5. **测试预览**：发布前运行 `hexo server` 本地预览
-
-## 维护任务
-
-### 定期更新依赖
-
-```bash
-cd /root/.openclaw/workspace/chiuhou-blog-new
-npm update
-git add package.json package-lock.json
-git commit -m "更新依赖"
-git push origin main
-```
-
-### 主题升级
-
-```bash
-npm update hexo-theme-butterfly
-cp -r node_modules/hexo-theme-butterfly themes/butterfly
-```
-
-## 统计信息
-
-- **创建日期**：2026-02-10
-- **文章总数**：7 篇
-- **主题**：Butterfly 5.5.4
-- **部署方式**：hexo-deployer-git
-- **托管平台**：GitHub Pages
+**文档版本**：v2.0  
+**更新日期**：2026-02-16  
+**更新原因**：修正README.md与博客发布的混淆问题  
+**关键改进**：强制性流程+验证清单+概念区分
