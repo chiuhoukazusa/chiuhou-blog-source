@@ -59,6 +59,28 @@ return (reflectColor * metalColor) * 0.9;
 - 球心 x 坐标：`-4.0, 0, +4.0`（原 `-2.5, 0, +2.5`）
 - 金属反射：`reflectColor * metalColor * 0.9`
 
+**第二次修复（2026-02-19 10:35）**：
+
+**用户反馈**：玻璃球上方有奇怪的阴影
+
+**根本原因**：**自相交（Self-Intersection）**
+- 光线击中表面后，反射/折射光线从 `hitPoint` 出发
+- 由于浮点精度误差，可能立即再次击中同一个表面
+- 导致阴影噪点（Shadow Acne）
+
+**修复方案**：光线起点沿法线偏移
+```cpp
+// ✅ 反射光线（外侧偏移）
+Vec3 reflectOrigin = hitPoint + normal * 0.001;
+
+// ✅ 折射光线（内侧偏移）
+Vec3 refractOrigin = hitPoint - normal * 0.001;
+```
+
+**为什么折射要向内偏移？**
+- 反射光线留在外部 → 沿法线外侧偏移（`+normal`）
+- 折射光线进入内部 → 沿法线内侧偏移（`-normal`）
+
 ---
 
 ## 实现过程
