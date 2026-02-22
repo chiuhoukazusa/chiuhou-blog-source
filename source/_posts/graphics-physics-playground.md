@@ -202,7 +202,112 @@ for (int i = 0; i < width * height * 3; i++) {
 
 ### 效果展示
 
-![粒子爆炸](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/particles_explosion.png)
+![粒子系统动画](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/particles_animation.gif)
+
+**特点**：
+- 实时物理模拟
+- 拖尾效果（motion blur）
+- 三种发射模式
+
+---
+
+## 📝 项目4: ASCII 艺术转换器
+
+### 原理解析
+
+**ASCII Art** 将图像转换为字符画，基于 **亮度映射**：
+
+1. 读取图像每个像素的 RGB 值
+2. 计算亮度：$L = 0.299R + 0.587G + 0.114B$
+3. 根据亮度映射到字符：`" .:-=+*#%@"`
+4. 输出为文本文件
+
+### 核心代码
+
+```cpp
+const char* ASCII_CHARS = " .:!*oe&#%@";  // 从暗到亮
+
+void imageToAscii(unsigned char* img, int width, int height, const char* output) {
+    FILE* f = fopen(output, "w");
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = (y * width + x) * 3;
+            
+            // 计算亮度
+            double brightness = 0.299 * img[idx] + 
+                              0.587 * img[idx+1] + 
+                              0.114 * img[idx+2];
+            
+            // 映射到字符
+            int charIdx = (int)(brightness / 255.0 * (strlen(ASCII_CHARS) - 1));
+            fputc(ASCII_CHARS[charIdx], f);
+        }
+        fputc('\n', f);
+    }
+    
+    fclose(f);
+}
+```
+
+### 亮度公式
+
+人眼对不同颜色的敏感度不同，使用加权平均：
+
+$$
+L = 0.299 \times R + 0.587 \times G + 0.114 \times B
+$$
+
+- **绿色权重最高**（0.587）- 人眼最敏感
+- **蓝色权重最低**（0.114）- 人眼较不敏感
+- **红色居中**（0.299）
+
+### 字符集选择
+
+**从暗到亮的字符序列**：
+
+```
+空格 → . → : → ! → * → o → e → & → # → % → @
+```
+
+根据字符在终端中的"视觉密度"排列。
+
+### 示例输出
+
+**分形树的 ASCII 版本**（部分）：
+
+```
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBBBBB:BB::BB:IIBBBBIIBlIIIBBBIIIlll
+BBBBBBBBBBBBBBBBBBBB:BB:BIIBBB:BBBIBiBBiBiBBiBIBBB
+BBBBBBBBBBBBBBBBB:BIBBlBBBBBIBBiB:BBBiiBBBiBBBB:Bi
+BBBBBBBBBBBB:BBBIBBl:IIlBBBBBBBBIIBBBBBBBBBBBBBBlI
+BBBBBBBBBB:B:BBBB:lBBBBiBBBB::BBBBlBBBB<BBBBBBlBBB
+BBBBBBBBB:BBIBBBliii<BBB<BBBBBBB~BBBBBBBBBBBBBBB~B
+BBBBBBBBBB:B:BBBBBBBBBBBBBBBBBBBBB~BBBBBBBBBBBBBB
+BBBBBBBB:BBBBBBBBBBB<BBBBBB~BBBBBBBBBBBBBBBBBBBBB
+BBBBBBBBBBBlBBBBBBB<BBBBBBBBB_BBBBBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB?B?BBBBBBBBB
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB]BBBBBBBBBBB
+```
+
+### 应用场景
+
+1. **终端艺术**：在命令行显示图像
+2. **Logo 生成**：纯文本公司标识
+3. **怀旧美学**：复古电脑风格
+4. **邮件签名**：纯文本环境下的图像
+
+### 效果展示
+
+**生成的 ASCII 文件**：
+- `ascii_tree.txt` - 分形树字符画（80x43）
+- `ascii_gradient.txt` - 渐变测试（30x30）
+
+**特点**：
+- 纯文本输出，任意编辑器可查看
+- 文件极小（<5KB）
+- 可调整字符集改变风格
 
 ---
 
@@ -608,12 +713,14 @@ if (y < h - 2) constraints.push_back(Constraint(&particles[idx], &particles[idx 
 
 ### 效果展示
 
-![布料模拟](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/cloth_frame_05.png)
+![布料模拟动画](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/cloth_animation.gif)
 
-**性能**：
+**动画特点**：
+- 6帧完整下落过程
 - 20x20 粒子网格
-- 200 帧模拟
-- 耗时 0.2 秒
+- Verlet 积分稳定求解
+- 三层约束（结构/剪切/弯曲）
+- 渲染时间：0.2秒
 
 ---
 
@@ -678,13 +785,15 @@ void resolveCollision(RigidBody& a, RigidBody& b) {
 
 ### 效果展示
 
-![2D 物理引擎](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/physics_frame_05.png)
+![2D 物理引擎动画](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/physics_animation.gif)
 
-**特点**：
-- 圆形刚体碰撞
-- 重力模拟
-- 边界反弹
-- 根据速度着色
+**动画特点**：
+- 11帧碰撞过程
+- 圆形刚体动力学
+- 冲量碰撞响应
+- 速度映射颜色（红=快，蓝=慢）
+- 边界反弹与衰减
+- 渲染时间：0.29秒
 
 ---
 
@@ -796,13 +905,19 @@ void drawTriangle(const Triangle& tri, const Mat4& mvp) {
 
 ### 效果展示
 
-![软件光栅化](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/rasterizer_output.png)
+![软件光栅化（彩色版）](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/rasterizer_colorful.png)
 
-**性能**：
-- 800x600 分辨率
-- 48 个三角形
-- 深度测试 + 光照
-- 0.045 秒完成
+**渲染参数**：
+- 分辨率：800x600
+- 6个彩色立方体（72个三角形）
+- 完整 MVP 管线
+- 深度测试 + Phong 光照
+- 渲染时间：0.063秒
+
+**颜色方案**：
+- 红色、绿色、蓝色、黄色、紫色主体
+- 灰色地板
+- 漫反射光照（光源方向：右上前方）
 
 ---
 
