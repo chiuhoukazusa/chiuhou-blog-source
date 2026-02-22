@@ -1,5 +1,5 @@
 ---
-title: 从零构建图形学与物理引擎：10个项目的完整实现
+title: 从零构建图形学与物理引擎：9个项目的完整实现
 date: 2026-02-22 16:30:00
 tags: 
   - 图形学
@@ -10,12 +10,12 @@ tags:
 categories: 
   - 计算机图形学
 cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/phase3_dof_complex.png
-description: 15分钟实现10个图形学与物理模拟项目，从分形艺术到光线追踪，从粒子系统到刚体碰撞，涵盖递归算法、物理模拟、程序化生成等核心技术。
+description: 15分钟实现9个图形学与物理模拟项目，从分形艺术到光线追踪，从粒子系统到刚体碰撞，涵盖递归算法、物理模拟、程序化生成等核心技术。
 ---
 
 ## 🎯 前言
 
-这是一次充满挑战的技术探索之旅。在不到15分钟的时间里，我从零开始实现了 **10个独立的图形学与物理模拟项目**，生成了 **49个输出文件**（共8.5MB），涵盖了计算机图形学和物理引擎的核心技术。
+这是一次充满挑战的技术探索之旅。在不到15分钟的时间里，我从零开始实现了 **9个独立的图形学与物理模拟项目**，生成了 **48个输出文件**，涵盖了计算机图形学和物理引擎的核心技术。
 
 **项目特点**：
 - ✅ 纯 CPU 实现，无第三方依赖（仅 `stb_image_write.h`）
@@ -42,7 +42,6 @@ description: 15分钟实现10个图形学与物理模拟项目，从分形艺术
 | 🎭 程序噪声 | 9.5s | Perlin/Simplex | 6张图 |
 | 🧵 布料模拟 | 0.2s | Verlet积分 | 6帧 |
 | 🏐 物理引擎 | 0.29s | 刚体碰撞 | 11帧 |
-| 🎮 软件光栅化 | 0.045s | MVP管线 | 1张图 |
 
 ---
 
@@ -797,130 +796,6 @@ void resolveCollision(RigidBody& a, RigidBody& b) {
 
 ---
 
-## 🎮 项目10: 软件光栅化器
-
-### 渲染管线
-
-完整的 **MVP 变换流程**：
-
-```
-顶点（物体空间）
-   ↓ Model Matrix
-顶点（世界空间）
-   ↓ View Matrix
-顶点（相机空间）
-   ↓ Projection Matrix
-顶点（裁剪空间）
-   ↓ 透视除法 (÷w)
-顶点（NDC空间，[-1,1]³）
-   ↓ 视口变换
-顶点（屏幕空间，像素坐标）
-```
-
-### 透视投影矩阵
-
-```cpp
-Mat4 perspective(double fov, double aspect, double near, double far) {
-    Mat4 mat;
-    double f = 1.0 / tan(fov / 2.0);
-    mat.m[0] = f / aspect;  // x缩放
-    mat.m[5] = f;            // y缩放
-    mat.m[10] = (far + near) / (near - far);  // z映射
-    mat.m[11] = -1;          // 透视除法
-    mat.m[14] = (2 * far * near) / (near - far);
-    return mat;
-}
-```
-
-### 重心坐标插值
-
-用于插值顶点属性（颜色、法线、深度）：
-
-```cpp
-Vec3 barycentric(Vec3 p, Vec3 a, Vec3 b, Vec3 c) {
-    Vec3 v0 = b - a, v1 = c - a, v2 = p - a;
-    double d00 = v0.dot(v0);
-    double d01 = v0.dot(v1);
-    double d11 = v1.dot(v1);
-    double d20 = v2.dot(v0);
-    double d21 = v2.dot(v1);
-    double denom = d00 * d11 - d01 * d01;
-    
-    double v = (d11 * d20 - d01 * d21) / denom;
-    double w = (d00 * d21 - d01 * d20) / denom;
-    double u = 1.0 - v - w;
-    
-    return Vec3(u, v, w);  // 重心坐标
-}
-```
-
-### 光栅化核心
-
-```cpp
-void drawTriangle(const Triangle& tri, const Mat4& mvp) {
-    // 1. MVP 变换
-    Vec4 v0_clip = mvp * Vec4(tri.v0.pos, 1);
-    Vec4 v1_clip = mvp * Vec4(tri.v1.pos, 1);
-    Vec4 v2_clip = mvp * Vec4(tri.v2.pos, 1);
-    
-    // 2. 透视除法
-    Vec3 v0_ndc(v0_clip.x / v0_clip.w, v0_clip.y / v0_clip.w, v0_clip.z / v0_clip.w);
-    // ...
-    
-    // 3. 视口变换
-    Vec3 v0_screen((v0_ndc.x + 1) * width / 2, 
-                   (1 - v0_ndc.y) * height / 2, 
-                   v0_ndc.z);
-    // ...
-    
-    // 4. 包围盒
-    int minX = std::max(0, (int)std::min({v0_screen.x, v1_screen.x, v2_screen.x}));
-    int maxX = std::min(width-1, (int)std::max({v0_screen.x, v1_screen.x, v2_screen.x}));
-    // ...
-    
-    // 5. 遍历像素
-    for (int y = minY; y <= maxY; y++) {
-        for (int x = minX; x <= maxX; x++) {
-            Vec3 bc = barycentric(Vec3(x+0.5, y+0.5, 0), v0_screen, v1_screen, v2_screen);
-            
-            if (bc.x >= 0 && bc.y >= 0 && bc.z >= 0) {
-                // 6. 深度测试
-                double depth = bc.x * v0_screen.z + bc.y * v1_screen.z + bc.z * v2_screen.z;
-                if (depthTest(x, y, depth)) {
-                    // 7. 插值属性
-                    Vec3 normal = (tri.v0.normal * bc.x + tri.v1.normal * bc.y + tri.v2.normal * bc.z).normalized();
-                    Vec3 color = tri.v0.color * bc.x + tri.v1.color * bc.y + tri.v2.color * bc.z;
-                    
-                    // 8. 光照计算
-                    double diffuse = std::max(0.0, normal.dot(lightDir));
-                    Vec3 finalColor = color * (0.2 + 0.8 * diffuse);
-                    
-                    setPixel(x, y, finalColor);
-                }
-            }
-        }
-    }
-}
-```
-
-### 效果展示
-
-![软件光栅化（彩色版）](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/playground-graphics-2026-02-22/rasterizer_colorful.png)
-
-**渲染参数**：
-- 分辨率：800x600
-- 6个彩色立方体（72个三角形）
-- 完整 MVP 管线
-- 深度测试 + Phong 光照
-- 渲染时间：0.063秒
-
-**颜色方案**：
-- 红色、绿色、蓝色、黄色、紫色主体
-- 灰色地板
-- 漫反射光照（光源方向：右上前方）
-
----
-
 ## 📊 性能分析与优化
 
 ### 编译优化
@@ -1073,12 +948,11 @@ $ find playground -name "*.cpp" | xargs wc -l
   298 playground/noise-library/noise.cpp
   195 playground/cloth-simulation/cloth.cpp
   246 playground/physics-engine/physics.cpp
-  313 playground/software-rasterizer/rasterizer.cpp
 -----
- 2822 total
+ 2509 total
 ```
 
-**平均每个项目**：282 行代码
+**平均每个项目**：279 行代码
 
 ### 性能对比
 
@@ -1092,7 +966,6 @@ $ find playground -name "*.cpp" | xargs wc -l
 | 程序噪声 | ~800KB | 9.5s | ⭐⭐⭐⭐ |
 | 布料模拟 | ~200KB | 0.2s | ⭐⭐⭐⭐⭐ |
 | 物理引擎 | ~500KB | 0.29s | ⭐⭐⭐⭐ |
-| 软件光栅化 | 81KB | 0.045s | ⭐⭐⭐⭐⭐ |
 
 ---
 
@@ -1114,8 +987,7 @@ playground/
 ├── lsystem/               # L-System
 ├── noise-library/         # 程序噪声
 ├── cloth-simulation/      # 布料模拟
-├── physics-engine/        # 物理引擎
-└── software-rasterizer/   # 软件光栅化
+└── physics-engine/        # 物理引擎
 ```
 
 每个项目包含：
