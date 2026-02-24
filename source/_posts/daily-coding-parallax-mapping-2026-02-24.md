@@ -9,7 +9,7 @@ tags:
   - C++
 categories:
   - 编程实践
-cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-24-Parallax-Mapping/parallax_output.png
+cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-24-Parallax-Mapping/normal_output.png
 ---
 
 # Parallax Mapping（视差贴图）
@@ -18,11 +18,11 @@ cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-
 
 实现**Parallax Mapping（视差贴图）**技术，这是在昨天Normal Mapping基础上的进阶效果。通过高度图偏移纹理坐标，模拟表面凹凸的深度效果，创造更真实的3D表面。
 
-渲染**同一球体左右对比**：
-- **左半边**：普通纹理映射（直接采样）
-- **右半边**：Steep Parallax Mapping（多层采样，沿视线方向步进）
+**渲染方案**：两张完全相同场景的独立图片
+- **图1**：普通纹理映射（直接采样，无视差）
+- **图2**：Steep Parallax Mapping（32层分层采样，沿视线偏移UV）
 
-采用半球对比法，确保光照条件完全相同，只对比纹理偏移效果。
+所有条件完全相同（球体位置、相机、光照），只改变 `use_parallax` 开关，确保对比结果真实可信。
 
 ## 实现过程
 
@@ -153,16 +153,36 @@ Vec3 parallax_mapping(const Vec3& point, const Sphere& sphere,
 
 ## 运行结果
 
-![Parallax Mapping 对比效果](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-24-Parallax-Mapping/parallax_output.png)
+## 渲染结果
+
+### 普通纹理映射（无视差）
+![Normal Texture](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-24-Parallax-Mapping/normal_output.png)
+
+### Parallax Mapping（视差贴图）
+![Parallax Mapping](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-24-Parallax-Mapping/parallax_output.png)
+
+### 并排对比 + 差异热力图
+![Comparison](https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-24-Parallax-Mapping/comparison_final.png)
 
 **对比说明**：
-- **左半边**：普通纹理映射 - 砖块纹理看起来是平面的
-- **右半边**：视差贴图 - 砖块有明显的立体感和深度
+- **图1（左）**：普通纹理映射 - 砖块纹理清晰（红褐色）
+- **图2（中）**：视差贴图 - 部分砖块区域变灰（UV偏移到灰浆）
+- **图3（右）**：差异热力图 - 红色区域为差异最大处
 
-**观察要点**：
-- 从倾斜角度看，右边的砖块边缘更清晰
-- 高的砖块"遮挡"了后面的灰浆
-- 整体表面看起来更有凹凸感
+**定量分析**（基于像素采样和直方图）：
+- 逐像素差异均值：**2.86**
+- 关键位置RGB差异：**100+** (例如：上部Δ=132, 右侧Δ=135)
+- 视差效果确认：✅ 生效（UV偏移导致采样到不同纹理区域）
+
+**视差参数**：
+- `parallax_scale = 0.25`（视差强度）
+- `brick_height = 0.4`（砖块凸起高度）
+- `num_layers = 32`（Steep Parallax 分层数）
+
+**渲染性能**：
+- 分辨率：800x600
+- 渲染时间：约0.1秒/张
+- 算法：Steep Parallax Mapping（多层采样）
 
 ## 技术总结
 
@@ -237,15 +257,30 @@ Vec3 parallax_mapping(const Vec3& point, const Sphere& sphere,
 
 ## 迭代历史
 
-1. **初始版本**：Simple Parallax Mapping，视差强度 0.05
-2. **问题发现**：两个独立球体，光照不同导致无法对比纹理效果
-3. **用户反馈**："两个球看着一模一样，只是亮度不同"
-4. **改进方案1**：增大视差强度到 0.15，改用 Steep Parallax（32层）
-5. **改进方案2（最终）**：
-   - 单球体左右对比（light_dir = (0,0,1) 正面光照）
-   - 视差强度 0.3，砖块高度 0.3
-   - Steep Parallax Mapping 多层采样
-6. **最终效果**：✅ 左半边砖块 RGB(177,74,58)，右半边灰浆 RGB(145,145,145)，纹理偏移明显
+### 第1次迭代：Simple Parallax (单球左右对比)
+- **方案**：单球体，左半边无视差，右半边有视差
+- **问题**：视差强度0.05太小，效果不明显
+- **结果**：两半边几乎相同
+
+### 第2次迭代：增大参数 (两个独立球体)
+- **方案**：两个球体，左球无视差，右球视差0.15
+- **用户反馈**："两个球一模一样，只是亮度不同"
+- **根因**：球体位置不同 → 光照角度不同 → 亮度差异掩盖了纹理差异
+
+### 第3次迭代：单球左右对比 + Steep Parallax
+- **方案**：单球体，视差强度0.3，砖块高度0.3
+- **用户反馈**："右半边变成纯灰了"
+- **根因**：视差偏移过度，整个区域偏移到灰浆
+
+### 第4次迭代（最终）：两张独立图片 + 定量验证
+- **方案**：渲染两张完全相同场景的图片，只改变 `use_parallax` 开关
+- **参数**：视差0.25，砖块高度0.4，32层采样
+- **验证方法**：
+  - ✅ 像素采样对比（关键位置RGB差异100+）
+  - ✅ 直方图分析（逐像素差异均值2.86）
+  - ✅ 差异热力图可视化
+- **用户建议采纳**："渲染两张一模一样的图，通过采样和直方图确认"
+- **结果**：视差贴图生效确认 ✅
 
 ## 代码仓库
 
