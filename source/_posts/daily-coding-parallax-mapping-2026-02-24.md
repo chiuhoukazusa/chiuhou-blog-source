@@ -18,42 +18,47 @@ cover: https://raw.githubusercontent.com/chiuhoukazusa/blog_img/main/2026/02/02-
 
 实现**Parallax Mapping（视差贴图）**技术，这是在昨天Normal Mapping基础上的进阶效果。通过高度图偏移纹理坐标，模拟表面凹凸的深度效果，创造更真实的3D表面。
 
-渲染**两个球体对比图**：
-- **左球**：普通纹理映射（平面砖块）
-- **右球**：视差贴图（立体砖块，带深度感）
+渲染**同一球体左右对比**：
+- **左半边**：普通纹理映射（直接采样）
+- **右半边**：Steep Parallax Mapping（多层采样，沿视线方向步进）
 
-直观展示视差贴图带来的立体效果差异。
+采用半球对比法，确保光照条件完全相同，只对比纹理偏移效果。
 
 ## 实现过程
 
-### 1. 视差贴图原理
+### 1. Steep Parallax Mapping 算法
 
-视差贴图的核心思想是：**根据视角和表面高度，偏移纹理坐标**。
-
-当从倾斜角度观察表面时：
-- 高的部分（砖块）会"遮挡"后面的纹理
-- 低的部分（灰浆）会"显露"更多纹理
-
-通过计算视线方向和表面高度，我们可以预测这种"视差"效应：
+本项目实现了**Steep Parallax Mapping（陡峭视差贴图）**，相比简单视差贴图更真实：
 
 ```cpp
-// 将视线方向转换到切线空间
-Vec3 view_tangent = Vec3(view_dir.dot(T), view_dir.dot(B), view_dir.dot(N));
+// 分层采样：沿视线方向步进
+const int num_layers = 32;  // 采样层数
+double layer_depth = 1.0 / num_layers;
+double current_depth = 0.0;
 
-// 根据高度和视角偏移UV坐标
-double parallax_scale = 0.05;  // 视差强度
-double offset_x = view_tangent.x / view_tangent.z * height * parallax_scale;
-double offset_y = view_tangent.y / view_tangent.z * height * parallax_scale;
+double parallax_scale = 0.3;  // 视差强度
+Vec2 delta_uv = Vec2(view_tangent.x / view_tangent.z * parallax_scale,
+                     view_tangent.y / view_tangent.z * parallax_scale);
+Vec2 current_uv = Vec2(u, v);
 
-// 应用偏移
-u -= offset_x;
-v -= offset_y;
+// 沿着视线方向步进，直到找到高度匹配的点
+double current_height;
+brickTexture(current_uv.x, current_uv.y, current_height);
+
+while (current_depth < current_height && current_depth < 1.0) {
+    current_uv = current_uv - delta_uv * layer_depth;
+    brickTexture(current_uv.x, current_uv.y, current_height);
+    current_depth += layer_depth;
+}
 ```
 
-**关键参数**：
-- `height`：表面高度（0.0-1.0，从高度图采样）
-- `view_tangent.z`：视线与表面的夹角（越小越倾斜）
-- `parallax_scale`：控制效果强度
+**算法思路**：
+1. 将深度范围分成 32 层
+2. 沿视线方向逐层采样高度图
+3. 当采样深度超过表面高度时停止
+4. 使用找到的 UV 坐标采样纹理
+
+**优势**：比简单视差贴图更准确，边缘不会出现严重拉伸
 
 ### 2. 程序化砖块纹理
 
@@ -187,44 +192,60 @@ Vec3 parallax_mapping(const Vec3& point, const Sphere& sphere,
 | **视差贴图** | 偏移UV坐标 | 深度感 | ⭐⭐⭐ | ⭐⭐⭐ |
 | **位移贴图** | 修改几何形状 | 真实凹凸 | ⭐ | ⭐⭐⭐⭐ |
 
-### 遇到的坑和解决方案
+### 遇到的问题和优化
 
-**问题1：编译警告 - 未使用的变量**
-```
-warning: variable 'light_tangent' set but not used
-warning: variable 'view_tangent' set but not used
-```
+**迭代1：初始版本 - 效果不明显**
+- 问题：两个独立球体，但因位置不同导致光照不同，无法对比纹理效果
+- 用户反馈："两个球看着一模一样，只是亮度不同"
+- 根本原因：左右球位置差异 → 光照角度不同 → 右球更暗
 
-**原因**：初始代码计算了切线空间的光照向量，但最后在世界空间计算光照。
+**迭代2：Simple Parallax Mapping - 偏移太小**
+- 问题：视差偏移量 `0.05` 太小，效果几乎看不见
+- 纹理高度差 `0.1` 也太小，导致偏移不明显
 
-**解决**：移除多余的切线空间转换代码，保持简洁。
+**最终方案：Steep Parallax + 增强参数**
+- ✅ 改为**单球体左右对比**（同一光照，只对比纹理偏移）
+- ✅ 使用 **Steep Parallax Mapping**（32层采样）
+- ✅ 增大参数：
+  - 视差强度 `0.05 → 0.3`（6倍）
+  - 砖块高度 `0.1 → 0.3`（3倍）
+  - 采样层数：1 → 32
+
+**效果对比**：
+- 左半边（红褐色砖块）：RGB(177, 74, 58)
+- 右半边（灰色灰浆）：RGB(145, 145, 145)
+- UV偏移导致采样到不同纹理区域，视差贴图生效 ✅
 
 ### 改进方向
 
-当前实现是**Simple Parallax Mapping**，还有更高级的版本：
+当前实现已经是 **Steep Parallax Mapping（32层采样）**。进一步改进方向：
 
-1. **Steep Parallax Mapping（陡峭视差贴图）**
-   - 沿视线方向采样多次
-   - 找到最接近表面的采样点
-   - 效果更真实，但性能更慢
-
-2. **Parallax Occlusion Mapping（POM）**
-   - 使用二分查找精确定位交点
-   - 添加自阴影效果
+1. **Parallax Occlusion Mapping（POM）**
+   - 在 Steep Parallax 基础上，使用二分查找精确定位交点
+   - 添加自阴影效果（shadow rays）
    - 质量最高，但性能开销大
+
+2. **Relief Mapping**
+   - Cone Stepping 优化采样路径
+   - 动态调整步长
+   - 更高效的深度查找
 
 3. **边缘处理优化**
    - 当前实现在边缘可能出现拉伸
    - 可以添加边缘检测和渐变混合
+   - Silhouette clipping 技术
 
 ## 迭代历史
 
-1. **初始版本**：单球体，左右半边切换
-2. **用户反馈**："左右半边看起来一样"
-3. **改进方案**：改为两个独立球体
-   - 左球 (center: -1.5, 0, -3)：普通纹理映射
-   - 右球 (center: 1.5, 0, -3)：视差贴图
-4. **最终效果**：✅ 亮度差异 42.93，对比清晰可见
+1. **初始版本**：Simple Parallax Mapping，视差强度 0.05
+2. **问题发现**：两个独立球体，光照不同导致无法对比纹理效果
+3. **用户反馈**："两个球看着一模一样，只是亮度不同"
+4. **改进方案1**：增大视差强度到 0.15，改用 Steep Parallax（32层）
+5. **改进方案2（最终）**：
+   - 单球体左右对比（light_dir = (0,0,1) 正面光照）
+   - 视差强度 0.3，砖块高度 0.3
+   - Steep Parallax Mapping 多层采样
+6. **最终效果**：✅ 左半边砖块 RGB(177,74,58)，右半边灰浆 RGB(145,145,145)，纹理偏移明显
 
 ## 代码仓库
 
